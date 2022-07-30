@@ -1,14 +1,7 @@
 from deck import Deck
 from hand import Hand
+from os import system
 
-# Player goes first so if bust dealer wins
-# Player can double down after his deal - only gets one hit.
-# Dealer must hit on less than 17, must stick on 17 or more
-# Natural (10 + Ace) in first two pays 1.5 bet
-# Push on dealer and player having same result
-
-# Options V2:
-  # Player can split pair with matched bet - split aces can only hit once and no natutal bonus
 
 class BlackJack:
   def __init__(self, player):
@@ -17,6 +10,7 @@ class BlackJack:
     self._current_bet = 0
     
   def play(self):
+    system("clear")
     print("Starting game ...")
 
     while True:
@@ -52,10 +46,12 @@ class BlackJack:
   def player_bet(self):
       print(f"Balance: ${self.player.balance}")
       bet = int(input("How much do you want to bet? "))
+      system("clear")
 
       while bet > self.player.balance:
         print("You don't have that much!")
         bet = int(input("How much do you want to bet? "))
+        system("clear")
 
       self.player.deduct_bet(bet)
       self._current_bet = bet
@@ -63,19 +59,28 @@ class BlackJack:
   def deal(self):
     self.dealer_hand = Hand(self.deck.deal_two())
     self.player_hand = Hand(self.deck.deal_two())
-    self.print_dealer_hand(open_ = False)
-    self.print_player_hand()
+    
 
   def print_player_hand(self):
-    print(f"{self.player.name} has {self.player_hand.max_value}: {self.player_hand}")
+    if self.player_hand.is_bust:
+      print(f"{self.player.name} has bust: {self.player_hand}")
+    else:
+      print(f"{self.player.name} has {self.player_hand.max_value}: {self.player_hand}")
   
   def print_dealer_hand(self, open_ = True):
     if open_:
-      print(f"Dealer has {self.dealer_hand.max_value}: {self.dealer_hand}")
+      if self.dealer_hand.is_bust:
+        print(f"Dealer has bust: {self.dealer_hand}")
+      else:
+        print(f"Dealer has {self.dealer_hand.max_value}: {self.dealer_hand}")
     else:
       print(f"Dealer has: {self.dealer_hand.first_card}, ?")
 
   def player_plays(self):
+    system("clear")
+    self.print_dealer_hand(open_ = False)
+    self.print_player_hand()
+
     while True:
       if self.player_hand.is_bust or self.player_hand.is_21:
         break
@@ -117,7 +122,8 @@ class BlackJack:
     self.hit()
 
   def dealer_plays(self):
-    print("Dealer's turn:")
+    self.print_player_hand()
+    print("\nDealer's turn:")
     self.print_dealer_hand()
     while self.dealer_hand.max_value < 17 and not self.dealer_hand.is_bust:
       new_card = self.deck.deal_one()
@@ -125,6 +131,7 @@ class BlackJack:
       self.print_dealer_hand()
 
   def update_for_winner(self, winner):
+    print("\n")
     if winner == "Dealer":
       print(f"Unlucky.  Balance now ${self.player.balance}")
     elif winner == "Player":
@@ -133,7 +140,7 @@ class BlackJack:
       self.player.add_winnings(self._current_bet + winnings)
       print(f"Congrats, you won ${winnings}.  Balance now ${self.player.balance}")
     else:
-      self.player.add_winning(self._current_bet)
+      self.player.add_winnings(self._current_bet)
       print(f"That's a push. Balance now ${self.player.balance}")
 
   def game_over(self):
@@ -146,10 +153,10 @@ class BlackJack:
     play_again = input("Want to go again (Y/N)? ").upper().strip()[0]
     while play_again not in ["Y", "N"]:
       play_again = input("Want to go again (Y/N)? ").upper().strip()[0]
+    system("clear")
     return play_again == "N"
   
   def end(self):
-    print("Thanks for playing!")
     message = ""
     net_cash = abs(self.player.net_win_loss)
 
