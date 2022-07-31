@@ -4,7 +4,7 @@ class Hand:
     self._hard_value = deal[0].value + deal[1].value
     self._soft_value = deal[0].alt_value + deal[1].alt_value
     self.bet = bet
-    self.id = id 
+    self.id = id
     self._hand_value_progression = [
       max(deal[0].value, deal[0].alt_value),
       max(self._hard_value, self._soft_value)
