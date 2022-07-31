@@ -1,6 +1,11 @@
 # BlackJack
 Simple Terminal based Black Jack game.
 
+## New in v2
+  - Player can split pair with matched bet. Can only split once. No "natural" bonus for splits.
+  - Clear terminal on transitions from betting to playing a hand.
+  - Increased info shown to user.
+
 ## v1:
 - Player enters name and then the initial amount of chips they want to buy.
 - Player goes first.
@@ -15,8 +20,9 @@ Simple Terminal based Black Jack game.
 - If player wins the hand with a "Natural" (10 value card and an Ace) then 1.5 x on pay out.
 - Push on dealer and player having same result
 
-## To do in V2:
-  - Player can split pair with matched bet - split aces can only hit once and no natutal bonus.
-  - Player can buy insurance if Dealer has open showing Ace on the deal.
+## To do in V3:
+  - Allow terminal args for options like bet limit and shoe size.
+  - Player can buy "Insurance" if Dealer has open showing Ace on the deal.
+  - Have "Clue" option that present optimal choice for player based on strategy tables.
   
  
