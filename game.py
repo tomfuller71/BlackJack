@@ -1,14 +1,15 @@
-from logging import critical
-from tracemalloc import start
+from os import system
+
 from deck import Deck
 from hand import Hand
-from os import system
 class BlackJack:
-  def __init__(self, player):
-    self.deck = Deck()
+  def __init__(self, player, bet_min=1, bet_max=1000, shoe_count=3):
+    self.deck = Deck(shoe_count)
     self.player = player
     self.natural_bonus = 0.5
     self.player_hands = []
+    self.bet_min = bet_min
+    self.bet_max = bet_max
 
   def play(self):
     system("clear")
@@ -42,22 +43,33 @@ class BlackJack:
     while self.dealer_hand.max_value < 17 and not self.dealer_hand.is_bust:
       self.dealer_hand.add_card(self.deck.deal_one())
 
-  def print_dealer_playing(self):
-      print("\nDealer's turn:")
-      self.print_dealer_hand()
-
   def player_bet(self):
       print(f"Balance: ${self.player.balance}")
-      bet = int(input("How much do you want to bet? "))
+      bet_str = input("How much do you want to bet? ")
       system("clear")
 
-      while bet > self.player.balance:
-        print("You don't have that much!")
-        bet = int(input("How much do you want to bet? "))
+      while self.invalid_bet(bet_str):
+        bet_str = input("How much do you want to bet? ")
         system("clear")
 
+      bet = int(bet_str)
       self.player.deduct_bet(bet)
       self.player_hands[0].bet = bet
+
+  def invalid_bet(self, bet_str):
+    invalid = False
+    if not bet_str.isnumeric():
+      invalid = True 
+
+    bet = int(bet_str)
+    if bet > self.player.balance or self.bet_min > bet or bet > self.bet_max:
+      invalid = True
+
+    limit = min(self.player.balance, self.bet_max)
+    if invalid:
+      print(f"Must be a number between ${self.bet_min} and ${limit}.")
+
+    return invalid
 
   def player_plays(self):
     self.check_for_splits()
@@ -74,6 +86,8 @@ class BlackJack:
         elif action == "Double":
           self.double(hand)
           break
+        elif action == "Insurance":
+          self.insurance(hand)
         else:
           break
   
@@ -102,15 +116,23 @@ class BlackJack:
   def hit(self, hand):
     new_card = self.deck.deal_one()
     hand.add_card(new_card)
+    self.print_player_hands()
 
   def double(self, hand):
     self.player.deduct_bet(hand.bet)
     hand.bet *= 2
     print(f"Bet raised to ${hand.bet}.")
     self.hit(hand)
+  
+  def insurance(self, hand):
+    insurance_cost = hand.bet / 2
+    self.player.deduct_bet(insurance_cost)
+    self.dealer_hand.insurance = insurance_cost
 
   def update_for_winner(self, hand, winner):
     print("\n")
+    self.check_insurance()
+
     if len(self.player_hands) > 1:
       print(f"For hand {hand.id}:")
     if winner == "Dealer":
@@ -167,6 +189,9 @@ class BlackJack:
     self.player_hands.append(second_hand)
 
   def print_player_hands(self):
+    if hasattr(self.dealer_hand, "insurance"):
+      print(f"Insurance taken: ${self.dealer_hand.insurance}")
+
     for hand in self.player_hands:
       hand_index = "Current hand"
       if len(self.player_hands) > 1:
@@ -209,6 +234,12 @@ class BlackJack:
     actions = ["Hit", "Stand"]
     if self.player.balance >= hand.bet and hand.card_count == 2:
        actions.append("Double")
+    if (not self.insurance_taken()
+        and len(self.player_hands) == 1
+        and hand.card_count == 2 
+        and self.dealer_hand.first_is_Ace
+      ):
+      actions.append("Insurance")
     return actions
 
   def get_if_player_continues(self):
@@ -223,3 +254,15 @@ class BlackJack:
       if not hand.is_bust:
         return False
     return True
+
+  def check_insurance(self):
+    if self.insurance_taken():
+      if self.dealer_hand.second_card.value == 10:
+        payout = self.dealer_hand.insurance * 2
+        self.player.add_winnings(payout)
+        print(f"Insurance pays ${payout}.")
+      else:
+        print("Insurance lost.")
+
+  def insurance_taken(self):
+    return hasattr(self.dealer_hand, "insurance")
