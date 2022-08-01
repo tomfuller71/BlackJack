@@ -54,7 +54,7 @@ def main():
     sys.exit()
 
   system("clear")
-  print("Hi! Welcome to the Black Jack table ...")
+  print("Hi! Ready to play Black Jack...")
   name = input("What's your name? ")
   chips = Question.get_numeric_response("How many $'s of chips do you want to buy?")
 

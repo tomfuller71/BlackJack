@@ -64,6 +64,10 @@ class Hand:
     return self._cards[1]
 
   @property
+  def last_card(self):
+    return self._cards[-1]
+
+  @property
   def first_is_Ace(self):
     return self._cards[0].value == 1
   

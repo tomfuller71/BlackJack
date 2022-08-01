@@ -3,6 +3,8 @@ from os import system
 from deck import Deck
 from hand import Hand
 from question import Question
+
+
 class BlackJack:
   def __init__(self, player, bet_min, bet_max, shoe_count):
     self.deck = Deck(shoe_count)
@@ -14,12 +16,15 @@ class BlackJack:
 
   def play(self):
     system("clear")
-    print("Starting game ...")
+    print(f"Welcome, {self.player.name}.")
+    print(f"This table's minimum bet in ${self.bet_min:.2f} and maximum is ${self.bet_max:.2f}.  Good luck!")
 
     while True:
       self.play_hand()
       if self.game_over():
         break
+      else:
+        system("clear")
 
     self.end()
 
@@ -62,21 +67,29 @@ class BlackJack:
     self.check_for_splits()
 
     for hand in self.player_hands:
-      while not (hand.is_bust or hand.is_21) :
+      action_taken = ""
+      while True :
         system("clear")
         print(f"Dealer has: {self.dealer_hand.first_card}\n")
+
+        if action_taken:
+          self.print_action_taken(action_taken, hand)
+        
         self.print_player_hands()
 
-        action = self.get_player_action(hand)
-        if action == "Hit":
+        if (
+          (hand.is_bust or hand.is_21)
+           or (action_taken in ["Double", "Stand"])
+        ):
+          break
+
+        action_taken = self.get_player_action(hand)
+        if action_taken == "Hit":
           self.hit(hand)
-        elif action == "Double":
+        elif action_taken == "Double":
           self.double(hand)
-          break
-        elif action == "Insurance":
+        elif action_taken == "Insurance":
           self.insurance(hand)
-        else:
-          break
   
   def score_player_hands(self):
     for hand in self.player_hands:
@@ -97,13 +110,17 @@ class BlackJack:
 
   # Player sub methods
   def check_for_splits(self):
-    if self.player_hands[0].is_split and self.player_splits():
+    hand = self.player_hands[0]
+    if (
+      self.player.balance >= hand.bet
+      and hand.is_split
+      and self.player_splits()
+    ):
       self.split_cards()
 
   def hit(self, hand):
     new_card = self.deck.deal_one()
     hand.add_card(new_card)
-    self.print_player_hands()
 
   def double(self, hand):
     self.player.deduct_bet(hand.bet)
@@ -117,13 +134,12 @@ class BlackJack:
     self.dealer_hand.insurance = insurance_cost
 
   def update_for_winner(self, hand, winner):
-    print("\n")
     self.check_insurance()
 
     if len(self.player_hands) > 1:
       print(f"For hand {hand.id}:")
     if winner == "Dealer":
-      print(f"Dealer wins.\n")
+      print(f"Dealer wins.")
     elif winner == "Player":
       original_bet = hand.bet
       winnings = original_bet * 2
@@ -135,6 +151,8 @@ class BlackJack:
     else:
       self.player.add_winnings(hand.bet)
       print(f"That's a push.")
+
+    print("\n")
 
   def game_over(self):
     if self.player.balance == 0:
@@ -192,16 +210,16 @@ class BlackJack:
     if self.all_player_hands_bust():
       return 
 
-    print("\n")
+    for index, max_value in enumerate(self.dealer_hand._hand_value_progression):
+      if index == 0:
+        continue
 
-    for index, max_value in enumerate(
-      self.dealer_hand._hand_value_progression
-      ):
       cards_str = self.dealer_hand.first_n_cards_str(index + 1)
       if max_value == 0:
         print(f"Dealer busted: {cards_str}")
       else:
         print(f"Dealer has {max_value}: {cards_str}")
+    print("\n")
   
   def get_player_action(self, hand):
     start_str = "\n"
@@ -242,3 +260,18 @@ class BlackJack:
 
   def insurance_taken(self):
     return hasattr(self.dealer_hand, "insurance")
+
+  def print_action_taken(self, action, hand):
+    if action == "Double":
+      print(f"Double down. Bet raised to ${hand.bet:.2f}.")
+    elif action == "Hit":
+      print("Hitting.")
+    elif action == "Insurance":
+      print("You took insurance on dealer having Black Jack.")
+    else:
+      print("Standing.")
+
+    if action in ["Double", "Hit"]:
+      print(f"You got a {hand.last_card}.")
+
+    print("\n")
