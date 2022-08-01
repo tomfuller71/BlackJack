@@ -68,16 +68,3 @@ class Question:
         print_error_message()
 
     return num
-
-if __name__ == "__main__":
-  yn = Question.get_bool_YN_response("Is it secret, is it safe?")
-  print(yn)
-
-  # new_num = get_numeric_response(
-  #   "Enter any number",
-  #   min= -1,
-  #   max = 1,
-  #   num_type=float
-  # )
-
-  # print(new_num)

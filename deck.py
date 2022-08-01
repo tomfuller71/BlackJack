@@ -14,7 +14,7 @@ class Deck:
           deck.append(Card(face, suit))
     shuffle(deck)
     return deck
-  
+
   def __init__(self, shoe_count):
     self.shoe_count = shoe_count
     self.cards = Deck.make_deck(self.shoe_count)
@@ -31,3 +31,19 @@ class Deck:
   @property
   def count(self):
     return len(self.cards)
+  
+  # @classmethod
+  # def test_split_deck(cls):
+  #   deck = []
+  #   deck.append(Card("6","❤" ))
+  #   deck.append(Card("7","❤" ))
+  #   deck.append(Card("8","❤" ))
+  #   deck.append(Card("9","❤" ))
+  #   deck.append(Card("10","❤" ))
+  #   deck.append(Card("J","❤" ))
+  #   deck.append(Card("Q","❤" ))
+  #   deck.append(Card("K","❤" ))
+  #   deck.append(Card("3","❤" ))
+  #   deck.append(Card("2","❤" ))
+  #   return deck
+  

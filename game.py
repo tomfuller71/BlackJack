@@ -3,6 +3,7 @@ from os import system
 from deck import Deck
 from hand import Hand
 from question import Question
+from strategy import strategy
 
 
 class BlackJack:
@@ -64,8 +65,6 @@ class BlackJack:
     self.player_hands[0].bet = bet
 
   def player_plays(self):
-    self.check_for_splits()
-
     for hand in self.player_hands:
       action_taken = ""
       while True :
@@ -88,6 +87,8 @@ class BlackJack:
           self.hit(hand)
         elif action_taken == "Double":
           self.double(hand)
+        elif action_taken == "Pair-Split":
+          self.split_cards(hand)
         elif action_taken == "Insurance":
           self.insurance(hand)
   
@@ -107,17 +108,19 @@ class BlackJack:
           winner = "Push"
           
       self.update_for_winner(hand, winner)
+  
+  def split_cards(self, hand):
+    split_card = hand.pop_card()
+    bet = hand.bet
 
-  # Player sub methods
-  def check_for_splits(self):
-    hand = self.player_hands[0]
-    if (
-      self.player.balance >= hand.bet
-      and hand.is_split
-      and self.player_splits()
-    ):
-      self.split_cards()
+    self.player.deduct_bet(bet)
 
+    new_card_1, new_card_2 = self.deck.deal_two()
+    hand.add_card(new_card_1)
+
+    new_hand = Hand([split_card, new_card_2], bet, 2)
+    self.player_hands.append(new_hand)
+  
   def hit(self, hand):
     new_card = self.deck.deal_one()
     hand.add_card(new_card)
@@ -172,26 +175,8 @@ class BlackJack:
       message = f"You broke even ... Congrats I guess."
 
     print(message)
-  
+
   # Helper functions
-  def player_splits(self):
-    split = input("Do you want to split (Y/N)? ")[0].upper()
-    while split not in ["Y", "N"]:
-      split = input("Enter Y or N: ")[0].upper()
-    return split == "Y"
-
-  def split_cards(self):
-    first_hand = self.player_hands[0]
-    split_card = first_hand.pop_card()
-    bet = first_hand.bet
-
-    self.player.deduct_bet(bet)
-
-    new_card_1, new_card_2 = self.deck.deal_two()
-    first_hand.add_card(new_card_1)
-
-    second_hand = Hand([split_card, new_card_2], bet, 2)
-    self.player_hands.append(second_hand)
 
   def print_player_hands(self):
     if hasattr(self.dealer_hand, "insurance"):
@@ -233,14 +218,22 @@ class BlackJack:
   
   def get_allowable_actions(self, hand):
     actions = ["Hit", "Stand"]
-    if self.player.balance >= hand.bet and hand.card_count == 2:
-       actions.append("Double")
-    if (not self.insurance_taken()
+
+    if hand.card_count == 2:
+      actions.append("Clue")
+
+      if self.player.balance >= hand.bet and hand.is_split:
+        actions.append("Pair-Split")
+        
+      if self.player.balance >= hand.bet:
+        actions.append("Double")
+
+      if (not self.insurance_taken()
         and len(self.player_hands) == 1
-        and hand.card_count == 2 
         and self.dealer_hand.first_is_Ace
-      ):
-      actions.append("Insurance")
+        ):
+        actions.append("Insurance")
+
     return actions
 
   def all_player_hands_bust(self):
@@ -264,10 +257,14 @@ class BlackJack:
   def print_action_taken(self, action, hand):
     if action == "Double":
       print(f"Double down. Bet raised to ${hand.bet:.2f}.")
+    elif action == "Pair-Split":
+      print("You split your pair.")
     elif action == "Hit":
       print("Hitting.")
     elif action == "Insurance":
       print("You took insurance on dealer having Black Jack.")
+    elif action == "Clue":
+      print(f"Recommended action is: {self.get_strategy(hand)}")
     else:
       print("Standing.")
 
@@ -275,3 +272,27 @@ class BlackJack:
       print(f"You got a {hand.last_card}.")
 
     print("\n")
+
+  def get_strategy(self, hand):
+    picture_cards = ["K", "Q", "J"]
+
+    key = self.dealer_hand.first_card._face
+    if key in picture_cards:
+      key = str(10)
+
+    if hand.is_split:
+      split_face = hand.first_card._face
+      if split_face in picture_cards:
+        split_face = "10"
+      return strategy[key]["split"][split_face]
+    elif hand.is_soft:
+      return strategy[key]["soft"][str(min(19, hand._soft_value))]
+    else:
+      hard_value = hand._hard_value
+      if hard_value < 8:
+        hard_value = 8
+      if hard_value > 17:
+        hard_value = 17
+      return strategy[key]["hard"][str(hard_value)]
+
+      
