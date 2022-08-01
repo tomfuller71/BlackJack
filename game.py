@@ -2,8 +2,9 @@ from os import system
 
 from deck import Deck
 from hand import Hand
+from question import Question
 class BlackJack:
-  def __init__(self, player, bet_min=1, bet_max=1000, shoe_count=3):
+  def __init__(self, player, bet_min, bet_max, shoe_count):
     self.deck = Deck(shoe_count)
     self.player = player
     self.natural_bonus = 0.5
@@ -33,7 +34,7 @@ class BlackJack:
     self.player_plays()
     self.print_dealer_progression()
     self.score_player_hands()
-    print(f"\nBalance now ${self.player.balance}.")
+    print(self.player)
 
   def deal(self):
     self.dealer_hand = Hand(self.deck.deal_two())
@@ -44,32 +45,18 @@ class BlackJack:
       self.dealer_hand.add_card(self.deck.deal_one())
 
   def player_bet(self):
-      print(f"Balance: ${self.player.balance}")
-      bet_str = input("How much do you want to bet? ")
-      system("clear")
-
-      while self.invalid_bet(bet_str):
-        bet_str = input("How much do you want to bet? ")
-        system("clear")
-
-      bet = int(bet_str)
-      self.player.deduct_bet(bet)
-      self.player_hands[0].bet = bet
-
-  def invalid_bet(self, bet_str):
-    invalid = False
-    if not bet_str.isnumeric():
-      invalid = True 
-
-    bet = int(bet_str)
-    if bet > self.player.balance or self.bet_min > bet or bet > self.bet_max:
-      invalid = True
-
+    print(self.player)
     limit = min(self.player.balance, self.bet_max)
-    if invalid:
-      print(f"Must be a number between ${self.bet_min} and ${limit}.")
 
-    return invalid
+    bet = Question.get_numeric_response(
+      "How much do you want to bet?",
+      min=self.bet_min,
+      max=limit,
+      num_type=float
+    )
+
+    self.player.deduct_bet(bet)
+    self.player_hands[0].bet = bet
 
   def player_plays(self):
     self.check_for_splits()
@@ -77,7 +64,7 @@ class BlackJack:
     for hand in self.player_hands:
       while not (hand.is_bust or hand.is_21) :
         system("clear")
-        print(f"Dealer has: {self.dealer_hand.first_card}")
+        print(f"Dealer has: {self.dealer_hand.first_card}\n")
         self.print_player_hands()
 
         action = self.get_player_action(hand)
@@ -136,7 +123,7 @@ class BlackJack:
     if len(self.player_hands) > 1:
       print(f"For hand {hand.id}:")
     if winner == "Dealer":
-      print(f"Dealer wins.")
+      print(f"Dealer wins.\n")
     elif winner == "Player":
       original_bet = hand.bet
       winnings = original_bet * 2
@@ -153,16 +140,16 @@ class BlackJack:
     if self.player.balance == 0:
       return True
     else:
-      return self.get_if_player_continues()
+      return not Question.get_bool_YN_response("Want to go again (Y/N)?")
 
   def end(self):
     message = ""
     net_cash = abs(self.player.net_win_loss)
 
     if self.player.net_win_loss < 0:
-      message = f"Unlucky! But thanks for the ${net_cash} you lost..."
+      message = f"Unlucky! But thanks for the ${net_cash: .2f} you lost..."
     elif self.player.net_win_loss > 0:
-      message = f"Congrats! You won ${net_cash}. Grr..."
+      message = f"Congrats! You won ${net_cash: .2f}. Grr..."
     else:
       message = f"You broke even ... Congrats I guess."
 
@@ -190,7 +177,7 @@ class BlackJack:
 
   def print_player_hands(self):
     if hasattr(self.dealer_hand, "insurance"):
-      print(f"Insurance taken: ${self.dealer_hand.insurance}")
+      print(f"Insurance taken: ${self.dealer_hand.insurance}\n")
 
     for hand in self.player_hands:
       hand_index = "Current hand"
@@ -198,7 +185,8 @@ class BlackJack:
         hand_index = f"Hand {hand.id}"
       
       score = "bust" if hand.is_bust else str(hand.max_value)
-      print(f"{hand_index}, bet ${hand.bet}, has {score}: {hand}")
+      print(f"{hand_index}:")
+      print(f"Bet ${hand.bet:.2f}.  Score {score}. Cards: {hand}\n")
    
   def print_dealer_progression(self):
     if self.all_player_hands_bust():
@@ -221,14 +209,9 @@ class BlackJack:
       start_str = f"\nHand {hand.id}: "
 
     actions = self.get_allowable_actions(hand)
-    actions_str = ", ".join(actions[:-1]) + " or " + actions[-1]
-    action_inputs = [action[0] for action in actions]
-    action = input(f"{start_str}Would you like to {actions_str}?")[0].upper()
-    while action not in action_inputs:
-      print(f"Please input {actions_str}:")
-      action = input(">> ")[0].upper()
+    question = f"{start_str}Would you like to {', '.join(actions[:-1])} or {actions[-1]}?"
 
-    return actions[action_inputs.index(action)]
+    return Question.get_response_from_list(question, actions)
   
   def get_allowable_actions(self, hand):
     actions = ["Hit", "Stand"]
@@ -242,13 +225,6 @@ class BlackJack:
       actions.append("Insurance")
     return actions
 
-  def get_if_player_continues(self):
-    play_again = input("Want to go again (Y/N)? ").upper().strip()[0]
-    while play_again not in ["Y", "N"]:
-      play_again = input("Want to go again (Y/N)? ").upper().strip()[0]
-    system("clear")
-    return play_again == "N"
-  
   def all_player_hands_bust(self):
     for hand in self.player_hands:
       if not hand.is_bust:

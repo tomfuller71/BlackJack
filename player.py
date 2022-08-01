@@ -19,4 +19,4 @@ class Player:
     return self.balance - self.initial_cash
 
   def __repr__(self):
-    return f"Player: {self.name} Balance: ${self._cash}"
+    return f"{self.name} has a balance of ${self._cash: .2f}."
