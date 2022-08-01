@@ -77,6 +77,10 @@ class Hand:
       self.card_count == 2
       and self._cards[0].value == self._cards[1].value
     )
+  
+  @property
+  def is_soft(self):
+    return self._soft_value != self._hard_value
     
   def __repr__(self):
     return ", ".join(str(card) for card in self._cards)
